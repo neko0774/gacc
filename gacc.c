@@ -10,15 +10,15 @@ typedef enum{
 	TK_RESERVED,
 	TK_NUM,
 	TK_EOF,
-} TokenKind,
+} TokenKind;
 
-typedef struct  Token Token;
+typedef struct Token Token;
 
 struct Token{
-	TokenKind Kind;
+	TokenKind kind;
 	Token *next;
 	int val;
-	cahr *dtr;
+	char *str;
 };
 
 
@@ -32,14 +32,20 @@ void error(char *fmt, ...){
 	exit(1);
 }
 
-bool consum(char op){
+bool consume(char op){
 	if (token->kind != TK_RESERVED | token->str[0] != op)
 		return false;
 	token = token -> next;
-	return true
+	return true;
 }
 
-void expect_number(){
+void expect(char op) {
+  if (token->kind != TK_RESERVED || token->str[0] != op)
+    error("not a '%c'", op);
+  token = token->next;
+}
+
+int expect_number(){
 	if (token->kind != TK_NUM)
 		error("not a number");
 	int val = token->val;
@@ -48,7 +54,7 @@ void expect_number(){
 }
 
 bool at_eof() {
-	return token->kind = TK_EOF;
+	return token->kind == TK_EOF;
 }
 
 Token *new_token(TokenKind kind, Token *cur, char *str) {
@@ -96,25 +102,25 @@ int main(int argc, char **argv) {
 	    }
 
 
-		token = tokenize(argv[1])
+		token = tokenize(argv[1]);
 		
 		//begining of the assembly
 	    printf(".intel_syntax noprefix\n");
 	    printf(".globl main\n");
 	    printf("main:\n");
-	    printf("  mov rax, %ld\n", expect_number());
+	    printf("  mov rax, %d\n", expect_number());
 
 		  while (!at_eof()) {
-    if (consume('+')) {
-      printf("  add rax, %d\n", expect_number());
-      continue;
-    }
+			if (consume('+')) {
+			printf("  add rax, %d\n", expect_number());
+			continue;
+			}
 
-    expect('-');
-    printf("  sub rax, %d\n", expect_number());
-  }
+			expect('-');
+			printf("  sub rax, %d\n", expect_number());
+		}
 
-  printf("  ret\n");
-  return 0;
+		printf("  ret\n");
+		return 0;
           
 }
