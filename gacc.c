@@ -23,6 +23,7 @@ struct Token{
 
 //Token focused
 Token *token;
+char *user_input;
 
 //report error
 void error_at(char *loc, char *fmt, ...){
@@ -50,9 +51,9 @@ bool consume(char op){
 //if a next token is an expected sign, read a next token
 //else raise an error
 void expect(char op) {
-  if (token->kind != TK_RESERVED || token->str[0] != op)
-    error_at(token->str, "not a number");
-  token = token->next;
+  	if (token->kind != TK_RESERVED || token->str[0] != op)
+  		error_at(token->str, "not a number");
+  	token = token->next;
 }
 
 //if a next token is an expected sign, read a next token
@@ -71,41 +72,42 @@ bool at_eof() {
 
 //create a new token and connect to cur
 Token *new_token(TokenKind kind, Token *cur, char *str) {
-  Token *tok = calloc(1, sizeof(Token));
-  tok->kind = kind;
-  tok->str = str;
-  cur->next = tok;
-  return tok;
+	Token *tok = calloc(1, sizeof(Token));
+	tok->kind = kind;
+	tok->str = str;
+	cur->next = tok;
+ 	return tok;
 }
+
 //tokenaize input p and return p
 Token *tokenize(char *p) {
-  Token head;
-  head.next = NULL;
-  Token *cur = &head;
+	Token head;
+	head.next = NULL;
+	Token *cur = &head;
 
-  while (*p) {
+	while (*p) {
     // skip blank
-    if (isspace(*p)) {
-      p++;
-      continue;
+	if (isspace(*p)) {
+      	p++;
+      	continue;
     }
 
     if (*p == '+' || *p == '-') {
-      cur = new_token(TK_RESERVED, cur, p++);
-      continue;
+      	cur = new_token(TK_RESERVED, cur, p++);
+      	continue;
     }
 
     if (isdigit(*p)) {
-      cur = new_token(TK_NUM, cur, p);
-      cur->val = strtol(p, &p, 10);
-      continue;
+		cur = new_token(TK_NUM, cur, p);
+ 	    cur->val = strtol(p, &p, 10);
+	    continue;
     }
 
-    error_at(token->str, "cannot tokenize");
+    error_at(p, "cannot tokenize");
   }
 
-  new_token(TK_EOF, cur, p);
-  return head.next;
+	new_token(TK_EOF, cur, p);
+	return head.next;
 }
 
 int main(int argc, char **argv) {
@@ -114,11 +116,10 @@ int main(int argc, char **argv) {
 	        return 1;
 	    }
 
-		char *user_input;
 		user_input = argv[1];
 		//tokenize
 		token = tokenize(argv[1]);
-		
+
 		//begining of the assembly
 	    printf(".intel_syntax noprefix\n");
 	    printf(".globl main\n");
