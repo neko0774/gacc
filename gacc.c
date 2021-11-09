@@ -21,7 +21,46 @@ struct Token{
 	char *str; //token string
 };
 
-//Token focused
+//abstract syntax tree
+//kinds of node
+typedef enum{
+	ND_ADD,
+	ND_SUB,
+	ND_MUL,
+	ND_DIV,
+	ND_NUM,
+} NodeKind;
+
+typedef struct Node Node;
+
+//abstract syntax tree
+//types of node
+struct Node{
+	NodeKind kind;
+	Node *lhs;
+	Node *rhs;
+	int val;
+};
+
+//create new node
+Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
+  Node *node = calloc(1, sizeof(Node));
+  node->kind = kind;
+  node->lhs = lhs;
+  node->rhs = rhs;
+  return node;
+}
+
+//create new node
+//just a number
+Node *new_node_num(int val) {
+  Node *node = calloc(1, sizeof(Node));
+  node->kind = ND_NUM;
+  node->val = val;
+  return node;
+}
+
+//Token which are focused
 Token *token;
 char *user_input;
 
