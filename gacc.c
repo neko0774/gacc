@@ -19,6 +19,7 @@ struct Token{
 	Token *next; //next input token
 	int val; // if kind if num, the number
 	char *str; //token string
+	int len;// length of token string
 };
 
 //abstract syntax tree
@@ -29,6 +30,10 @@ typedef enum{
 	ND_MUL,
 	ND_DIV,
 	ND_NUM,
+	ND_EQ,
+	ND_NE,
+	ND_LEQ,
+	ND_LT,
 } NodeKind;
 
 typedef struct Node Node;
@@ -42,11 +47,6 @@ struct Node{
 	int val;
 };
 
-//declareation of the functions
-Node *mul();
-Node *primary();
-Node *expr();
-Node *unary();
 
 //Token which are focused
 Token *token;
@@ -86,8 +86,8 @@ void error_at(char *loc, char *fmt, ...){
 
 //if a next token is an expected sign, read a next token and reurn true
 //else return false
-bool consume(char op){
-	if (token->kind != TK_RESERVED | token->str[0] != op)
+bool consume(char *op){
+	if (token->kind != TK_RESERVED || token->len != strlen(op) || memcmp(token->str, op, token->len))
 		return false;
 	token = token -> next;
 	return true;
@@ -95,10 +95,10 @@ bool consume(char op){
 
 //if a next token is an expected sign, read a next token
 //else raise an error
-void expect(char op) {
-  	if (token->kind != TK_RESERVED || token->str[0] != op)
-  		error_at(token->str, "not a number");
-  	token = token->next;
+void expect(char *op) {
+  if (token->kind != TK_RESERVED || token->len != strlen(op) || memcmp(token->str, op, token->len))
+  	error_at(token->str, "not a number");
+  token = token->next;
 }
 
 //if a next token is an expected sign, read a next token
@@ -111,17 +111,21 @@ int expect_number(){
 	return val;
 }
 
-bool at_eof() {
-	return token->kind == TK_EOF;
-}
-
 //create a new token and connect to cur
-Token *new_token(TokenKind kind, Token *cur, char *str) {
+Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
 	Token *tok = calloc(1, sizeof(Token));
 	tok->kind = kind;
 	tok->str = str;
+	tok->len = len;
 	cur->next = tok;
  	return tok;
+}
+
+bool check_parameter(char *a, char *b){
+	if (memcmp(a, b, strlen(b))==0)
+		return true;
+	else
+		return false;
 }
 
 //tokenaize input p and return p
@@ -131,38 +135,94 @@ Token *tokenize(char *p) {
 	Token *cur = &head;
 
 	while (*p) {
-    // skip blank
-	if (isspace(*p)) {
-      	p++;
-      	continue;
+  // skip blank
+    if (isspace(*p)) {
+      p++;
+      continue;
     }
 
-    if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p=='(' || *p==')') {
-      	cur = new_token(TK_RESERVED, cur, p++);
-      	continue;
+		if (check_parameter(p, "==") || check_parameter(p, ">=") || check_parameter(p, "<=") || check_parameter(p, "!=")){
+			cur = new_token(TK_RESERVED, cur, p, 2);
+			p += 2;
+			continue;
+		}	
+
+    if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p=='(' || *p==')' || *p=='>' || *p=='<') {
+      cur = new_token(TK_RESERVED, cur, p, 1);
+			p++;
+      continue;
     }
 
     if (isdigit(*p)) {
-		cur = new_token(TK_NUM, cur, p);
- 	    cur->val = strtol(p, &p, 10);
-	    continue;
+    cur = new_token(TK_NUM, cur, p, 0);
+    cur->val = strtol(p, &p, 10);
+    continue;
     }
 
     error_at(p, "cannot tokenize");
-  	}
-
-	new_token(TK_EOF, cur, p);
+    }
+	new_token(TK_EOF, cur, p, 0);
 	return head.next;
 }
 
+//declareation of the functions
+Node *mul();
+Node *add();
+Node *primary();
+Node *expr();
+Node *unary();
+Node *equlity();
+Node *relational();
+Node *equality();
+
+//expr       = equality
+//equality   = relational ("==" relational | "!=" relational)*
+//relational = add ("<" add | "<=" add | '>' add | ">=" add)*
+//add        = mul ("+" mul | "-" mul)*
+//mul        = unary ("*" unary | "/" unary)*
+//unary      = ("+" | "-")? primary
+//primary    = num | "(" expr ")"
+
 //fucntions for calculation
 Node *expr() {
-  	Node *node = mul();
+	return equality();
+}
 
+Node *equality(){
+	// if the token is == or !=,
+	Node *node = relational();
+	for (;;){
+		if (consume("=="))
+			node = new_node(ND_EQ, node, relational());
+		else if (consume("!="))
+			node = new_node(ND_NE, node, relational());
+		else
+			return node;
+	}
+}
+
+Node *relational() {
+	Node *node = add();
+	for (;;){
+		if (consume("<"))
+			node = new_node(ND_LT, node, add());
+		else if (consume("<="))
+			node = new_node(ND_LEQ, node, add());
+		else if (consume(">"))
+			node = new_node(ND_LT, add(), node);
+		else if (consume(">="))
+			node = new_node(ND_LEQ, add(), node);
+		else
+			return node;
+	}
+}
+
+Node *add() {
+  	Node *node = mul();
   	for (;;) {
-  		if (consume('+'))
+  		if (consume("+"))
       		node = new_node(ND_ADD, node, mul());
-    	else if (consume('-'))
+    	else if (consume("-"))
       		node = new_node(ND_SUB, node, mul());
     	else
       		return node;
@@ -171,11 +231,10 @@ Node *expr() {
 
 Node *mul() {
   	Node *node = unary();
-
   	for (;;) {
-  		if (consume('*'))
+  		if (consume("*"))
       		node = new_node(ND_MUL, node, unary());
-    	else if (consume('/'))
+    	else if (consume("/"))
       		node = new_node(ND_DIV, node, unary());
     	else
       		return node;
@@ -184,9 +243,9 @@ Node *mul() {
 
 Node *primary() {
   	// if the next token is "(" then there should be "(" expr ")"
-  	if (consume('(')) {
+  	if (consume("(")) {
   		Node *node = expr();
-    	expect(')');
+    	expect(")");
     	return node;
 	}
 
@@ -195,9 +254,9 @@ Node *primary() {
 }
 
 Node *unary() {
-  if (consume('+'))
+  if (consume("+"))
     return primary();
-  if (consume('-'))
+  if (consume("-"))
     return new_node(ND_SUB, new_node_num(0), primary());
   return primary();
 }
@@ -227,6 +286,26 @@ void gen(Node *node) {
 	case ND_DIV:
 		printf("  cqo\n");
 		printf("  idiv rdi\n");
+		break;
+	case ND_EQ:
+		printf("	cmp rax, rdi\n");
+		printf("	sete al\n");
+		printf("	movzb rax, al\n");
+		break;
+	case ND_NE:
+		printf("  cmp rax, rdi\n");
+		printf("  setne al\n");
+		printf("  movzb rax, al\n");
+		break;
+	case ND_LT:
+		printf("	cmp rax, rdi\n");
+		printf("	setl al\n");
+		printf("	movzb rax, al\n");
+		break;
+	case ND_LEQ:
+		printf("	cmp rax, rdi\n");
+		printf("	setle al\n");
+		printf("	movzb rax, al\n");
 		break;
 	}
 
