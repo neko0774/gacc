@@ -2,4 +2,4 @@
 
 C-compiler
 \
-The aim whould be self compiling
+The aim is self compiling
