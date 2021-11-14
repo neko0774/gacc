@@ -43,9 +43,9 @@ Token *tokenize(char *p) {
     }
 
     if (isdigit(*p)) {
-    cur = new_token(TK_NUM, cur, p, 0);
-    cur->val = strtol(p, &p, 10);
-    continue;
+    	cur = new_token(TK_NUM, cur, p, 0);
+    	cur->val = strtol(p, &p, 10);
+    	continue;
     }
 
     error_at(p, "cannot tokenize");
