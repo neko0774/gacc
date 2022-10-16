@@ -11,8 +11,9 @@ typedef struct Token Token;
 
 typedef enum{
 	TK_RESERVED, //sign
+	TK_IDENT, //identifier
 	TK_NUM, //number
-	TK_EOF,
+	TK_EOF, //EOF
 } TokenKind;
 
 struct Token{
@@ -23,23 +24,22 @@ struct Token{
 	int len;// length of token string
 };
 
-
 typedef struct Node Node;
-
-
 
 //abstract syntax tree
 //kinds of node
 typedef enum{
-	ND_ADD,
-	ND_SUB,
-	ND_MUL,
-	ND_DIV,
-	ND_NUM,
-	ND_EQ,
-	ND_NE,
-	ND_LEQ,
-	ND_LT,
+	ND_ADD, //+
+	ND_SUB, //-
+	ND_MUL, //*
+	ND_DIV, // /
+	ND_NUM, // number
+	ND_EQ, // ==
+	ND_NE, // !=
+	ND_LEQ, // <=
+	ND_LT, // <
+	ND_ASSIGN, //=
+	ND_LVAR, // local variable
 } NodeKind;
 
 //abstract syntax tree
@@ -49,31 +49,39 @@ struct Node{
 	Node *lhs;
 	Node *rhs;
 	int val;
+	int offset;
 };
 
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
+void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
 bool consume(char *op);
 void expect(char *op);
 int expect_number();
+bool at_eof();
 Token *new_token(TokenKind kind, Token *cur, char *str, int len);
 bool check_parameter(char *a, char *b);
-Token *tokenize(char *p);
-
+void *tokenize(char *p);
+Token *consume_ident();
 
 //declareation of the functions
+void program();
+
 Node *mul();
 Node *add();
 Node *primary();
 Node *expr();
 Node *unary();
-Node *equlity();
+Node *equality();
 Node *relational();
 Node *equality();
+Node *assign();
+Node *stmt();
 
 void gen(Node *node);
 
 //Token which are focused
-Token *token;
-char *user_input;
+extern Token *token;
+extern char *user_input;
+extern Node *code[100];
