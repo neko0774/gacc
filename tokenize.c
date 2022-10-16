@@ -1,6 +1,10 @@
 #include "gacc.h"
 
+
 //create a new token and connect to cur
+//cur is a current token which is focused
+//cur is updated to tok as new a token is created
+//then tok becomes cur
 Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
 	Token *tok = calloc(1, sizeof(Token));
 	tok->kind = kind;
@@ -17,18 +21,18 @@ bool check_parameter(char *a, char *b){
 		return false;
 }
 
-//tokenaize input p and return p
-Token *tokenize(char *p) {
+//tokenize input p and return p
+void *tokenize(char *p) {
 	Token head;
 	head.next = NULL;
 	Token *cur = &head;
 
 	while (*p) {
-  // skip blank
-    if (isspace(*p)) {
-      p++;
-      continue;
-    }
+		// skip blank
+	    if (isspace(*p)) {
+	    	p++;
+	    	continue;
+	    }
 
 		if (check_parameter(p, "==") || check_parameter(p, ">=") || check_parameter(p, "<=") || check_parameter(p, "!=")){
 			cur = new_token(TK_RESERVED, cur, p, 2);
@@ -36,24 +40,37 @@ Token *tokenize(char *p) {
 			continue;
 		}	
 
-    if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p=='(' || *p==')' || *p=='>' || *p=='<') {
-      cur = new_token(TK_RESERVED, cur, p, 1);
+	    if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p=='(' || *p==')' || *p=='>' || *p=='<' || *p==';') {
+	      	cur = new_token(TK_RESERVED, cur, p, 1);
 			p++;
-      continue;
-    }
+	      	continue;
+	    }
 
-    if (isdigit(*p)) {
-    	cur = new_token(TK_NUM, cur, p, 0);
-    	cur->val = strtol(p, &p, 10);
-    	continue;
-    }
+		if ('a' <= *p && *p <= 'z'){
+			cur = new_token(TK_IDENT, cur, p, 1);
+			p++;
+			continue;
+		}
 
-    error_at(p, "cannot tokenize");
-    }
+	    if (isdigit(*p)) {
+	    	cur = new_token(TK_NUM, cur, p, 0);
+			char *q = p;
+	    	cur->val = strtol(p, &p, 10);
+	    	continue;
+	    }
+	    error_at(p, "cannot tokenize");
+	}
 	new_token(TK_EOF, cur, p, 0);
-	return head.next;
+	token = head.next;
 }
 
+void error(char *fmt, ...) {
+	va_list ap;
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	fprintf(stderr, "\n");
+	exit(1);
+}
 
 //report error
 void error_at(char *loc, char *fmt, ...){
@@ -66,6 +83,7 @@ void error_at(char *loc, char *fmt, ...){
 	fprintf(stderr, "^ ");
 	vfprintf(stderr, fmt, ap);
 	fprintf(stderr, "\n");
+	fprintf(stderr, "%s and %d\n", token->str, token->kind);
 	exit(1);
 }
 
@@ -81,9 +99,11 @@ bool consume(char *op){
 //if a next token is an expected sign, read a next token
 //else raise an error
 void expect(char *op) {
-  if (token->kind != TK_RESERVED || token->len != strlen(op) || memcmp(token->str, op, token->len))
-  	error_at(token->str, "not a number");
-  token = token->next;
+	if (token->kind != TK_RESERVED || token->len != strlen(op) || memcmp(token->str, op, token->len)){
+		fprintf(stderr, "%d\n", token->kind);
+  		error_at(token->str, "unexpected token used");
+	}
+	token = token->next;
 }
 
 //if a next token is an expected sign, read a next token
@@ -92,6 +112,16 @@ int expect_number(){
 	if (token->kind != TK_NUM)
 		error_at(token->str, "not a number");
 	int val = token->val;
-	token = token -> next;
+	token = token->next;
 	return val;
+}
+
+bool at_eof() {
+	return token->kind == TK_EOF;
+}
+
+Token *consume_ident(){
+	if (token->kind == TK_IDENT)
+		return token;
+	return NULL;
 }

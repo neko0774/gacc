@@ -19,17 +19,30 @@ Node *new_node_num(int val) {
 	return node;
 }
 
-//expr       = equality
-//equality   = relational ("==" relational | "!=" relational)*
-//relational = add ("<" add | "<=" add | '>' add | ">=" add)*
-//add        = mul ("+" mul | "-" mul)*
-//mul        = unary ("*" unary | "/" unary)*
-//unary      = ("+" | "-")? primary
-//primary    = num | "(" expr ")"
+//functions for calculation
+void program() {
+	int i=0;
+	while (!at_eof()){
+		code[i++] = stmt();
+	}
+	code[i] = NULL;
+}
 
-//fucntions for calculation
 Node *expr() {
-	return equality();
+	return assign();
+}
+
+Node *assign() {
+	Node *node = equality();
+	if (consume("="))
+		node = new_node(ND_ASSIGN, node, assign());
+	return node;
+}
+
+Node *stmt() {
+	Node *node = expr();
+	expect(";");
+	return node;
 }
 
 Node *equality(){
@@ -62,44 +75,52 @@ Node *relational() {
 }
 
 Node *add() {
-  	Node *node = mul();
-  	for (;;) {
-  		if (consume("+"))
-      	node = new_node(ND_ADD, node, mul());
-    	else if (consume("-"))
-      	node = new_node(ND_SUB, node, mul());
-    	else
-      	return node;
-  }
+	Node *node = mul();
+	for (;;) {
+		if (consume("+"))
+  		   	node = new_node(ND_ADD, node, mul());
+   		else if (consume("-"))
+			node = new_node(ND_SUB, node, mul());
+   		else
+    	 	return node;
+	}
 }
 
 Node *mul() {
-  	Node *node = unary();
-  	for (;;) {
-  		if (consume("*"))
-      	node = new_node(ND_MUL, node, unary());
-    	else if (consume("/"))
-      	node = new_node(ND_DIV, node, unary());
-    	else
-      	return node;
-  	}
+ 	Node *node = unary();
+ 	for (;;) {
+ 		if (consume("*"))
+    		node = new_node(ND_MUL, node, unary());
+   		else if (consume("/"))
+    		node = new_node(ND_DIV, node, unary());
+   		else
+    		return node;
+ 	}
 }
 
 Node *primary() {
-  	// if the next token is "(" then there should be "(" expr ")"
-  	if (consume("(")) {
-  		Node *node = expr();
-    	expect(")");
-    	return node;
+	// if the next token is "(" then there should be "(" expr ")"
+	if (consume("(")) {
+ 		Node *node = expr();
+   	expect(")");
+   	return node;
 	}
-  	//otherwise, there should be a number
-  	return new_node_num(expect_number());
+	//if there is a variable
+	Token *tok = consume_ident();
+	if (tok) {
+		Node *node = calloc(1, sizeof(Node));
+		node->kind = ND_LVAR;
+		node->offset = (tok->str[0]-'a'+1)*8;
+		return node;
+	}
+	//otherwise, there should be a number
+ 	return new_node_num(expect_number());
 }
 
 Node *unary() {
-  if (consume("+"))
-    return primary();
-  if (consume("-"))
-    return new_node(ND_SUB, new_node_num(0), primary());
-  return primary();
+	if (consume("+"))
+		return primary();
+	if (consume("-"))
+		return new_node(ND_SUB, new_node_num(0), primary());
+	return primary();
 }
