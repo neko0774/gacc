@@ -1,5 +1,4 @@
 # gacc
 
-C-compiler
-\
+C-compiler\
 The aim is self compiling
