@@ -15,10 +15,11 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
 }
 
 bool check_parameter(char *a, char *b){
-	if (memcmp(a, b, strlen(b))==0)
+	if (memcmp(a, b, strlen(b))==0){
 		return true;
-	else
+  }else{
 		return false;
+  }
 }
 
 //tokenize input p and return p
@@ -29,10 +30,10 @@ void *tokenize(char *p) {
 
 	while (*p) {
 		// skip blank
-	    if (isspace(*p)) {
-	    	p++;
-	    	continue;
-	    }
+	  if (isspace(*p)) {
+	  	p++;
+	  	continue;
+	  }
 
 		if (check_parameter(p, "==") || check_parameter(p, ">=") || check_parameter(p, "<=") || check_parameter(p, "!=")){
 			cur = new_token(TK_RESERVED, cur, p, 2);
@@ -40,25 +41,25 @@ void *tokenize(char *p) {
 			continue;
 		}	
 
-	    if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p=='(' || *p==')' || *p=='>' || *p=='<' || *p==';') {
-	      	cur = new_token(TK_RESERVED, cur, p, 1);
-			p++;
-	      	continue;
-	    }
+	  if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p=='(' || *p==')' || *p=='>' || *p=='<' || *p==';') {
+      cur = new_token(TK_RESERVED, cur, p, 1);
+      p++;
+	    continue;
+	  }
 
 		if ('a' <= *p && *p <= 'z'){
-			cur = new_token(TK_IDENT, cur, p, 1);
+			cur = new_token(TK_INDENT, cur, p, 1);
 			p++;
 			continue;
 		}
 
-	    if (isdigit(*p)) {
-	    	cur = new_token(TK_NUM, cur, p, 0);
-			char *q = p;
-	    	cur->val = strtol(p, &p, 10);
-	    	continue;
-	    }
-	    error_at(p, "cannot tokenize");
+	  if (isdigit(*p)) {
+	  	cur = new_token(TK_NUM, cur, p, 0);
+      char *q = p;
+	  	cur->val = strtol(p, &p, 10);
+	  	continue;
+	  }
+	  error_at(p, "cannot tokenize");
 	}
 	new_token(TK_EOF, cur, p, 0);
 	token = head.next;
@@ -90,8 +91,9 @@ void error_at(char *loc, char *fmt, ...){
 //if a next token is an expected sign, read a next token and reurn true
 //else return false
 bool consume(char *op){
-	if (token->kind != TK_RESERVED || token->len != strlen(op) || memcmp(token->str, op, token->len))
-		return false;
+	if (token->kind != TK_RESERVED || token->len != strlen(op) || memcmp(token->str, op, token->len)){
+    return false;
+  }
 	token = token -> next;
 	return true;
 }
@@ -101,7 +103,7 @@ bool consume(char *op){
 void expect(char *op) {
 	if (token->kind != TK_RESERVED || token->len != strlen(op) || memcmp(token->str, op, token->len)){
 		fprintf(stderr, "%d\n", token->kind);
-  		error_at(token->str, "unexpected token used");
+  	error_at(token->str, "unexpected token used");
 	}
 	token = token->next;
 }
@@ -109,8 +111,9 @@ void expect(char *op) {
 //if a next token is an expected sign, read a next token
 //else raise an error
 int expect_number(){
-	if (token->kind != TK_NUM)
-		error_at(token->str, "not a number");
+	if (token->kind != TK_NUM) {
+    error_at(token->str, "not a number");
+  }
 	int val = token->val;
 	token = token->next;
 	return val;
@@ -121,7 +124,8 @@ bool at_eof() {
 }
 
 Token *consume_ident(){
-	if (token->kind == TK_IDENT)
-		return token;
+	if (token->kind == TK_INDENT){
+    return token;
+  }
 	return NULL;
 }

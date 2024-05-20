@@ -11,7 +11,7 @@ typedef struct Token Token;
 
 typedef enum{
 	TK_RESERVED, //sign
-	TK_IDENT, //identifier
+	TK_INDENT, //identifier
 	TK_NUM, //number
 	TK_EOF, //EOF
 } TokenKind;
