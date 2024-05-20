@@ -1,8 +1,5 @@
 #include "gacc.h"
 
-Token *token;
-char *user_input;
-Node *code[100];
 
 int main(int argc, char **argv) {
     if (argc != 2) {
@@ -10,24 +7,21 @@ int main(int argc, char **argv) {
     	return 1;
     }
 
-    user_input = argv[1];
   	//tokenize
-    tokenize(argv[1]);
-    program();
+    Token *tok = tokenize(argv[1]);
+    Node *node = program(tok);
 
   	//begining of the assembly
     printf(".intel_syntax noprefix\n");
     printf(".globl main\n");
     printf("main:\n");
 
+    //変数分の領域確保
     printf("  push rbp\n");
     printf("  mov rbp, rsp\n");
     printf("  sub rsp,208\n");
 
-    for(int i=0;code[i];i++){
-    	gen(code[i]);
-    	printf("  pop rax\n");
-    }
+    gen(node);
 
     printf("  mov rsp, rbp\n");
     printf("  pop rbp\n");
